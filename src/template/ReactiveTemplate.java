@@ -22,7 +22,6 @@ public class ReactiveTemplate implements ReactiveBehavior {
 
 	@Override
 	public void setup(Topology topology, TaskDistribution td, Agent agent) {
-
 		// Reads the discount factor from the agents.xml file.
 		// If the property is not present it defaults to 0.95
 		Double discount = agent.readProperty("discount-factor", Double.class,
