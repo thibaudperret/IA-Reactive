@@ -22,4 +22,14 @@ public class NoTaskState extends State {
         return actions;
     }
 
+	@Override
+	public boolean isTaskState() {
+		return false;
+	}
+
+	@Override
+	public boolean isNoTaskState() {
+		return true;
+	}
+
 }

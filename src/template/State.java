@@ -14,6 +14,9 @@ public abstract class State {
         this.city = city;
     }
     
+    public abstract boolean isTaskState();
+    public abstract boolean isNoTaskState();
+
     public abstract List<Action> actions();
 
 }

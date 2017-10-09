@@ -22,6 +22,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
     private double pPickup;
     private int numActions;
     private Agent myAgent;
+    
 
     @Override
     public void setup(Topology topology, TaskDistribution td, Agent agent) {
@@ -39,17 +40,33 @@ public class ReactiveTemplate implements ReactiveBehavior {
         ArrayList<State> states = new ArrayList<State>();
         for(City from: topology.cities()) {
         	for(City to: topology.cities()) {
-            	states.add(new TaskState(from, new Task(0, from, to, td.reward(from, to), td.weight(from, to))));            	
+            	if( (!to.equals(from)) && (td.probability(from, to) != 0)) {
+            		states.add(new TaskState(from, new Task(0, from, to, td.reward(from, to), td.weight(from, to))));
+            	}
         	}
         	states.add(new NoTaskState(from));
         }
         
         //V-optimization
+        double deltaV = 1000;
+        while (deltaV > 0.001) {
+        	for (State s: states) {
+        		for (Action a:s.actions()) {
+        			
+        		}
+        	}
+        }
         
         
         
         
         
+    }
+    
+    private double transition(State current, Action a, State future) {
+    	if(current.isNoTaskState()) {
+    		a.
+    	}
     }
 
     @Override

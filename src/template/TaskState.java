@@ -26,5 +26,15 @@ public class TaskState extends State {
         actions.add(new Action.Pickup(task));
         return actions;
     }
+
+	@Override
+	public boolean isTaskState() {
+		return true;
+	}
+
+	@Override
+	public boolean isNoTaskState() {
+		return false;
+	}
     
 }
