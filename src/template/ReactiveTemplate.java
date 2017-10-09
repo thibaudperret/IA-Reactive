@@ -1,13 +1,16 @@
 package template;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
-import logist.simulation.Vehicle;
 import logist.agent.Agent;
 import logist.behavior.ReactiveBehavior;
 import logist.plan.Action;
 import logist.plan.Action.Move;
 import logist.plan.Action.Pickup;
+import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.topology.Topology;
@@ -30,6 +33,23 @@ public class ReactiveTemplate implements ReactiveBehavior {
         this.pPickup = discount;
         this.numActions = 0;
         this.myAgent = agent;
+        
+        
+        //State creation
+        ArrayList<State> states = new ArrayList<State>();
+        for(City from: topology.cities()) {
+        	for(City to: topology.cities()) {
+            	states.add(new TaskState(from, new Task(0, from, to, td.reward(from, to), td.weight(from, to))));            	
+        	}
+        	states.add(new NoTaskState(from));
+        }
+        
+        //V-optimization
+        
+        
+        
+        
+        
     }
 
     @Override

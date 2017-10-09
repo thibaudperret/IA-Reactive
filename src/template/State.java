@@ -3,6 +3,7 @@ package template;
 import java.util.List;
 
 import logist.plan.Action;
+import logist.simulation.Vehicle;
 import logist.topology.Topology.City;
 
 public abstract class State {

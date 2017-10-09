@@ -23,8 +23,8 @@ public class TaskState extends State {
             actions.add(new Action.Move(neighbor));
         }
         
-        actions.add(new Action.)
-        return null;        
+        actions.add(new Action.Pickup(task));
+        return actions;
     }
     
 }
