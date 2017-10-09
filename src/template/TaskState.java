@@ -12,20 +12,23 @@ public class TaskState extends State {
     private Task task;
     
     public TaskState(City city, Task task) {
-        super(city);
+        super(city);        
         this.task = task;
+        initialize();
+        
     }
     
-    @Override
-    public List<Action> actions() {
-        List<Action> actions = new ArrayList<Action>();
+    private void initialize() {
+    	
         for (City neighbor: city.neighbors()) {
-            actions.add(new Action.Move(neighbor));
-        }
-        
-        actions.add(new Action.Pickup(task));
-        return actions;
+            doable.add(new Action.Move(neighbor));
+            reachable.add(neighbor);
+            
+        }        
+        doable.add(new Action.Pickup(task));
+        reachable.add(task.deliveryCity);
     }
+    
 
 	@Override
 	public boolean isTaskState() {
@@ -36,5 +39,6 @@ public class TaskState extends State {
 	public boolean isNoTaskState() {
 		return false;
 	}
+
     
 }

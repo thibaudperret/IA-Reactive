@@ -10,17 +10,17 @@ public class NoTaskState extends State {
     
     public NoTaskState(City city) {
         super(city);
+        initialize();
     }
 
-    @Override
-    public List<Action> actions() {
-        List<Action> actions = new ArrayList<Action>();
+  private void initialize() {
+    	
         for (City neighbor: city.neighbors()) {
-            actions.add(new Action.Move(neighbor));
-        }
-        
-        return actions;
-    }
+            doable.add(new Action.Move(neighbor));
+            reachable.add(neighbor);
+            
+        }        
+  }
 
 	@Override
 	public boolean isTaskState() {
