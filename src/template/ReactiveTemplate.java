@@ -2,6 +2,7 @@ package template;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -18,135 +19,219 @@ import logist.topology.Topology.City;
 
 public class ReactiveTemplate implements ReactiveBehavior {
 
-    private Random random;
-    private double pPickup;
-    private int numActions;
-    private Agent myAgent;
-    
+	private Random random;
+	private double pPickup;
+	private int numActions;
+	private Agent myAgent;
 
-    @Override
-    public void setup(Topology topology, TaskDistribution td, Agent agent) {
-        // Reads the discount factor from the agents.xml file.
-        // If the property is not present it defaults to 0.95
-        Double discount = agent.readProperty("discount-factor", Double.class, 0.95);
+	Map<State, Map<Decision, Double>> Q = new HashMap<State, Map<Decision, Double>>();
+	Map<State, Map<Decision, Double>> R = new HashMap<State, Map<Decision, Double>>();
+	Map<State, Map<Decision, Map<State, Double>>> T = new HashMap<State, Map<Decision, Map<State, Double>>>();
+	Map<State, Decision> best = new HashMap<State, Decision>();
+	Map<State, Double> V = new HashMap<State, Double>();
+	List<State> states = new ArrayList<State>();
+	
+	@Override
+	public void setup(Topology topology, TaskDistribution td, Agent agent) {
+		// Reads the discount factor from the agents.xml file.
+		// If the property is not present it defaults to 0.95
+		Double discount = agent.readProperty("discount-factor", Double.class, 0.95);
+		discount = 0.1;
 
-        this.random = new Random();
-        this.pPickup = discount;
-        this.numActions = 0;
-        this.myAgent = agent;
-        
-        Map<State, Map<Action, Double>> Q = new HashMap<State, Map<Action, Double>>(); 
-        Map<State, Map<Action, Double>> R = new HashMap<State, Map<Action, Double>>();
-        Map<State, Action> best = new HashMap<State, Action>();
-        Map<State, Double> V = new HashMap<State, Double>();
-        ArrayList<State> states = new ArrayList<State>();
+		this.random = new Random();
+		this.pPickup = discount;
+		this.numActions = 0;
+		this.myAgent = agent;
 
-        
-        
-        //State creation
-        for(City from: topology.cities()) {
-        	for(City to: topology.cities()) {
-            	if( (!to.equals(from)) && (td.probability(from, to) != 0)) {
-            		states.add(new TaskState(from, new Task(0, from, to, td.reward(from, to), td.weight(from, to))));
-            	}
-        	}
-        	states.add(new NoTaskState(from));
-        }
-        
-        
-        //Reward definition
-        for (State s: states) {
-        	Map<Action, Double> tmp = new HashMap<Action, Double>();
-        	City from = s.city;
-        	for (int i = 0; i < s.doable.size(); ++i) {
 
-            	City to = s.reachable.get(i);
-    			double reward = td.reward(s.city, s.reachable.get(i)) - (agent.vehicles().get(0).costPerKm() * from.distanceTo(to));
-        		tmp.put(s.doable.get(i), reward);
-    		}
-        	R.put(s, new HashMap<Action, Double>(tmp));
-        }
-        
-        
-        //V initialization
-        
-        for(State s: states) {
-        	V.put(s, 0.0);
-        }
-        
-        
-        //V-optimization
-        double deltaV = 1000;
-       
-        while (deltaV > 0.001) {
-        	deltaV = 0;
-        	for (State s: states) {
-            	
-        		Map<Action, Double> tmp = new HashMap<Action, Double>();
-        		double maxQValue = 0;
-        		Action bestAction = null;
-        		for (int i = 0; i < s.doable.size(); ++i) {
-                	
-        			City to = s.reachable.get(i);
-                	Action a = s.doable.get(i);
-                	double qValue = 0;
-                	
-                	for(State s1: states) {
-                		qValue += transition(s, a, s1, to, td) * V.get(s1);
-                	}
-                	
-                	qValue += R.get(s).get(a);                	
-        			tmp.put(a, qValue);
-        			
-        			if(qValue > maxQValue) {
-        				maxQValue = qValue;
-        				bestAction = a;
-        			}
-        			
-        			deltaV += Math.abs(V.get(s) - maxQValue);
-        		}
-        		
-        		best.put(s, bestAction);
-        		Q.put(s, tmp);
-        		V.put(s, maxQValue);
-        	}
-        }
-        
-        
-        
-        
-        
-    }
-    
-    
-    private double transition(State current, Action a, State future, City destination, TaskDistribution td) {
-    	if(destination != future.city) {
-    		return 0;
-    	}
-    	
-    	if(current.isNoTaskState()) {
-    		return 1 - td.probability(future.city, null);
-    	} else {
-    		return td.probability(future.city, null);
-    	}
-    }
+		// State creation
+		for (City from : topology.cities()) {
+			for (City to : topology.cities()) {
+				if ((!to.equals(from)) && (td.probability(from, to) != 0)) {
+					states.add(new TaskState(from, to));
+				}
+			}
+			states.add(new NoTaskState(from));
+		}
 
-    @Override
-    public Action act(Vehicle vehicle, Task availableTask) {
-        Action action;
+		// Reward definition
+		for (State s : states) {
+			Map<Decision, Double> tmp = new HashMap<Decision, Double>();
+			City from = s.city;
+			for (Decision d : s.doable) {
 
-        if (availableTask == null || random.nextDouble() > pPickup) {
-            City currentCity = vehicle.getCurrentCity();
-            action = new Move(currentCity.randomNeighbor(random));
-        } else {
-            action = new Pickup(availableTask);
-        }
+				if (d.isMove()) {
+					tmp.put(d, -agent.vehicles().get(0).costPerKm() * from.distanceTo(d.destination));
+				} else {
+					double reward = td.reward(s.city, d.destination)
+							- (agent.vehicles().get(0).costPerKm() * from.distanceTo(d.destination));
+					tmp.put(d, reward);
+				}
 
-        if (numActions >= 1) {
-            System.out.println("The total profit after " + numActions + " actions is " + myAgent.getTotalProfit() + " (average profit: " + (myAgent.getTotalProfit() / (double) numActions) + ")");
-        }
-        numActions++;
+			}
+			R.put(s, new HashMap<Decision, Double>(tmp));
+		}
+		
+		//Fill transition table
 
-        return action;
-    }
+		for (State s : states) {
+			System.out.println(s);
+			Map<Decision, Map<State, Double>> dtemp = new HashMap<Decision, Map<State, Double>>();
+			for (Decision d : s.doable) {
+				Map<State, Double> s1tmp = new HashMap<State, Double>();
+				for (State s1 : states) {
+					System.out.println("\t" + d + " " + s1 + ": " + transition(s, d, s1, td));
+					s1tmp.put(s1, transition(s, d, s1, td));
+				}
+				dtemp.put(d, new HashMap<State, Double>(s1tmp));
+			}
+			T.put(s, new HashMap<Decision, Map<State, Double>>(dtemp));
+		}
+
+		// V initialization
+
+		for (State s : states) {
+			V.put(s, 0.0);
+		}
+
+		// V-optimization
+		double deltaV = 1000;
+
+//		while (deltaV > 0.001) {
+//			deltaV = 0;
+//			Map<State, Double> Vprev = new HashMap<State, Double>(V);
+//
+//			for (State s : states) {
+//				Map<Decision, Double> Qtmp = new HashMap<Decision, Double>();
+//
+//				double maxQValue = Double.NEGATIVE_INFINITY;
+//				Decision bestDecision = null;
+//
+//				for (Decision d : s.doable) {
+//					double qValue = 0;
+//
+//					for (State s1 : states) {
+//						qValue += T.get(s).get(d).get(s1) * discount * Vprev.get(s1);
+//					}
+//
+//					qValue += R.get(s).get(d);
+//					Qtmp.put(d, qValue);
+//
+//					if (qValue > maxQValue) {
+//						maxQValue = qValue;
+//						bestDecision = d;
+//					}
+//
+//				}
+//				
+//				best.put(s, bestDecision);
+//				Q.put(s, Qtmp);
+//				V.put(s, maxQValue);
+//			}
+//			
+//			deltaV = diff(states, Vprev, V);
+//			System.out.println(deltaV);
+//		}
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		double delta = 10;
+		
+		while(delta > 0.0001) {
+			Map<State, Double> Vprev = new HashMap<State, Double>(V);
+			
+			for(State s : states) {
+				Map<Decision, Double> Qtmp = new HashMap<Decision, Double>(); 
+				Decision bestDecision = null;
+				Double maxQValue = Double.NEGATIVE_INFINITY;
+				for(Decision d : s.doable) {
+					double sum = 0;
+					for(State s1: states) {						
+						sum += T.get(s).get(d).get(s1) * Vprev.get(s1);						
+					}
+					sum = sum * discount + R.get(s).get(d);
+					if(sum > maxQValue) {
+						maxQValue = sum;
+						bestDecision = d;
+					}
+					Qtmp.put(d, sum);
+				}
+				best.put(s, bestDecision);
+				V.put(s, maxQValue);
+				Q.put(s, Qtmp);
+				
+
+			}
+			
+			delta = diff(states, Vprev, V);
+			System.out.println(delta);
+		}
+	}
+	
+	private double diff(List<State> states, Map<State, Double> old, Map<State, Double> updated) {
+		double a = 0.0;
+		
+		for (State s : states) {
+			a += Math.abs(old.get(s) - updated.get(s));
+		}
+		
+		return a;
+	}
+
+	private double transition(State current, Decision d, State future, TaskDistribution td) {
+		if (!d.destination.equals(future.city)) {
+			return 0;
+		}
+
+		if (future.isNoTaskState()) {
+			return td.probability(future.city, null);
+		} else {
+			return td.probability(future.city, ((TaskState) future).taskDestination);
+		}
+	}
+
+	@Override
+	public Action act(Vehicle vehicle, Task availableTask) {
+		 Action action;
+		 City currentCity = vehicle.getCurrentCity();		 
+		
+		if (availableTask == null) {
+			State current = new NoTaskState(currentCity);
+			City toReach = best.get(current).destination;
+			action = new Move(toReach);
+		} else {
+			State current = new TaskState(currentCity, availableTask.deliveryCity);
+			Decision bestDecision = best.get(current);
+			if(bestDecision.isMove()) {
+				City toReach = bestDecision.destination;
+				action = new Move(toReach);
+			} else {				
+				action = new Pickup(availableTask);
+			}
+		}
+
+		if (numActions >= 1) {
+			System.out.println("The total profit after " + numActions + " actions is " + myAgent.getTotalProfit()
+					+ " (average profit: " + (myAgent.getTotalProfit() / (double) numActions) + ")");
+		}
+		numActions++;
+
+		return action;
+	}
 }

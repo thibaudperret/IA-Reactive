@@ -1,19 +1,16 @@
 package template;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-import logist.plan.Action;
-import logist.task.Task;
 import logist.topology.Topology.City;
 
 public class TaskState extends State {
     
-    private Task task;
-    
-    public TaskState(City city, Task task) {
+	protected City taskDestination;
+	
+    public TaskState(City city, City c) {
         super(city);        
-        this.task = task;
+        this.taskDestination = c;
         initialize();
         
     }
@@ -21,14 +18,16 @@ public class TaskState extends State {
     private void initialize() {
     	
         for (City neighbor: city.neighbors()) {
-            doable.add(new Action.Move(neighbor));
-            reachable.add(neighbor);
+            doable.add(new MoveFreely(neighbor));
             
         }        
-        doable.add(new Action.Pickup(task));
-        reachable.add(task.deliveryCity);
+        doable.add(new TaskAccomplishment(taskDestination));
     }
     
+    @Override
+    public String toString() {
+    	return city + " -> " + taskDestination;
+    }
 
 	@Override
 	public boolean isTaskState() {
@@ -39,6 +38,22 @@ public class TaskState extends State {
 	public boolean isNoTaskState() {
 		return false;
 	}
+	
+	  @Override
+	    public boolean equals(Object o) {
+	    	if(! (o instanceof TaskState)) {
+	    		return false;
+	    	} else {
+	    		return (((TaskState)o).currentCity().equals(city) && (((TaskState)o).taskDestination.equals(taskDestination)));
+	    	}
+	    	
+	    }
+	  
+	  @Override
+	  public int hashCode() {
+		  return Objects.hash(city, taskDestination);
+	  }
+	    
 
     
 }
