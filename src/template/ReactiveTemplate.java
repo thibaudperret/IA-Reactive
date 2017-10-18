@@ -36,7 +36,6 @@ public class ReactiveTemplate implements ReactiveBehavior {
 		// Reads the discount factor from the agents.xml file.
 		// If the property is not present it defaults to 0.95
 		Double discount = agent.readProperty("discount-factor", Double.class, 0.95);
-		discount = 0.1;
 
 		this.random = new Random();
 		this.pPickup = discount;
@@ -95,60 +94,7 @@ public class ReactiveTemplate implements ReactiveBehavior {
 		}
 
 		// V-optimization
-		double deltaV = 1000;
-
-//		while (deltaV > 0.001) {
-//			deltaV = 0;
-//			Map<State, Double> Vprev = new HashMap<State, Double>(V);
-//
-//			for (State s : states) {
-//				Map<Decision, Double> Qtmp = new HashMap<Decision, Double>();
-//
-//				double maxQValue = Double.NEGATIVE_INFINITY;
-//				Decision bestDecision = null;
-//
-//				for (Decision d : s.doable) {
-//					double qValue = 0;
-//
-//					for (State s1 : states) {
-//						qValue += T.get(s).get(d).get(s1) * discount * Vprev.get(s1);
-//					}
-//
-//					qValue += R.get(s).get(d);
-//					Qtmp.put(d, qValue);
-//
-//					if (qValue > maxQValue) {
-//						maxQValue = qValue;
-//						bestDecision = d;
-//					}
-//
-//				}
-//				
-//				best.put(s, bestDecision);
-//				Q.put(s, Qtmp);
-//				V.put(s, maxQValue);
-//			}
-//			
-//			deltaV = diff(states, Vprev, V);
-//			System.out.println(deltaV);
-//		}
-
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+			
 		
 		
 		double delta = 10;
